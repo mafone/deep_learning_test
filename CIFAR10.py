@@ -113,4 +113,3 @@ print (loss_and_metrics)
 #Eval the y_train output and save in the output folder
 #new_im = Image.fromarray (y_train)
 #new_im.save("numpy_altered_sample.png")
-
