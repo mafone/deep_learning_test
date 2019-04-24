@@ -86,7 +86,9 @@ y_train = numpy.array(image_list1)
 
 #print (y_train)
 
-#The batch size is a hyperparameter of gradient descent that controls the number of training samples to work through before the model’s internal parameters are updated.
+
+#The batch size is a hyperparameter of gradient descent that controls the number of training samples to work through before the model's internal parameters are updated.
+
 #The number of epochs is a hyperparameter of gradient descent that controls the number of complete passes through the training dataset.
 model.fit (x_train, y_train, epochs=1, batch_size=32) #32 is the default batch_size
 
