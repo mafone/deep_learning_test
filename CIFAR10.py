@@ -12,78 +12,102 @@ from PIL import Image #pip install image
 import glob
 import cv2 as cv
 import numpy #for arrays and complex objects management
-#from numpy import*
+import csv
 
-#from scipy import misc
-#from scipy.misc import imread
-#from skimage.io import imread
+def load_csv (fn): 
+    res = {}
+    for row in csv.DictReader(open(fn)):
+            res[row['fn']] = row['label']
+    return res
 
-def load_img (folder): 
-        image_list = []
-        for filename in glob.glob(folder + '/*.jpg'): #assuming jpg
-            #im=Image.open(filename)
-            #im = imread(filename)
-            im = cv.imread (filename)
-            image_list.append(im)
-            #print ("****", im, "****")
-        #Convert array
-        return image_list
+
+def get_tag (orientation):
+    if orientation == 'upright':
+        return [0, 0, 0]
+    elif orientation == 'rotated_left':
+        return [0, 1, 0]
+    elif orientation == 'rotated_right':
+        return [0, 0, 1]
+    else: #upside_down
+        return [0, 1, 1]
+
+
+def load_train_img (folder): 
+    image_list = []
+    truth = {}
+    #get the tags
+    for filename in glob.glob(folder + '/*.csv'): #assuming csv
+        truth = load_csv (filename)
+
+    for filename in glob.glob(folder + '/*.jpg'): #assuming jpg
+        im = cv.imread (filename)
+        #filename = filename.split ("/")[-1] #Just the filename withput the full directory
+        #tag = get_tag (truth [filename])
+        #im = numpy.insert (im, 0, tag, 0)
+        image_list.append(im)
+    return image_list
+
+
+def load_test_img (folder): 
+    image_list = []
+
+    for filename in glob.glob(folder + '/*.jpg'): #assuming jpg
+        im = cv.imread (filename)
+        filename = filename.split ("/")[-1] #Just the filename withput the full directory
+        image_list.append(im)
+    return image_list
+
 
 model = Sequential()
 
-#image_list = load_img (sys.argv[1])
-
-#model.add(Convolution2D(...)) # Output shape of convolution is 4d
-#model.add(Flatten()) # Flatten input into 2d
-#model.add(Dense(...)) # Dense layer require a 2d input
-
-#Stacking layers (add)
-#model.add(LSTM(3))
-#model.add(LSTM(64, input_dim = 1))
-#model.add(Dropout(0.2))
-#model.add(LSTM(16))
-
-#nb_of_features, len_of_sequence = len (image_list), len (image_list[0])
-#model.add(LSTM(64, input_shape = (len_of_sequence, nb_of_features), return_sequences=True))
-#model.add(LSTM(64, input_dim = nb_of_features, input_len = len_of_sequence, return_sequences=True))
-
+model.add(Dense(units=3, activation='relu')) #model.add(Dense(units=64, activation='relu', input_dim=100))
+model.add(Dense(units=3, activation='softmax')) #model.add(Dense(units=10, activation='softmax'))
 model.add(Dense(units=3, activation='relu')) #model.add(Dense(units=64, activation='relu', input_dim=100))
 model.add(Dense(units=3, activation='softmax')) #model.add(Dense(units=10, activation='softmax'))
 
-#once the model seems good configuring the learning process with .compile():
+
+#once the model seems good, configure the learning process with .compile():
 model.compile(loss='categorical_crossentropy', optimizer='sgd', metrics=['accuracy'])
 
-#Changing configuration eventually
+#Changing configuration (eventually)
 #model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.SGD(lr=0.01, momentum=0.9, nesterov=True))
 
+print ("\n************TRAINING************\n")
 #iterating the training data in batches
-image_list = load_img (sys.argv[1])
-print ("Number of elements in the training set -> ", len (image_list))
+image_list1 = load_train_img (sys.argv[1])
+#print ("Number of elements in the training set -> ", len (image_list))
 
-x_train = numpy.array(image_list)
-#x_train=asarray(Image.open('foto.jpg'))
-#x=x_train.shape[0] #y=x_train.shape[1]*x_train.shape[2] #x_train.resize((x,y)) # a 2D array
+x_train = numpy.array(image_list1) #x=x_train.shape[0] #y=x_train.shape[1]*x_train.shape[2] #x_train.resize((x,y)) # a 2D array
+y_train = numpy.array(image_list1)
 
-y_train = numpy.array(image_list)
-#y_train=asarray(Image.open('foto.jpg'))
-#new_im = Image.fromarray (y_train)
-#new_im.save("numpy_altered_sample.png")
 
 #x_train and y_train are Numpy arrays --just like in the Scikit-Learn API.
 #x=y_train.shape[0] #y=y_train.shape[1]*y_train.shape[2] #y_train.resize((x,y)) # a 2D array #numpy.resize(y_train,(x,y))
 
 #print (y_train)
 
+#The batch size is a hyperparameter of gradient descent that controls the number of training samples to work through before the model’s internal parameters are updated.
+#The number of epochs is a hyperparameter of gradient descent that controls the number of complete passes through the training dataset.
 model.fit (x_train, y_train, epochs=1, batch_size=32) #32 is the default batch_size
 
-#Alternatively, you we can feed batches to the model manually:
+
+#Alternatively, we can feed batches to the model manually:
+#x_batch = 32
+#y_batch = 8
 #model.train_on_batch(x_batch, y_batch)
 
+print ("\n************TESTING************\n")
+image_list2 = load_test_img (sys.argv[2])
+x_test = numpy.array(image_list2)
+y_test = numpy.array(image_list2)
+
 #Evaluate the performance in one line:
-#loss_and_metrics = model.evaluate(x_test, y_test, batch_size=128)
+loss_and_metrics = model.evaluate(x_train, y_train, batch_size=128)
+print (loss_and_metrics)
 
 #Or generate predictions on new data:
 #classes = model.predict(x_test, batch_size=128)
+#print (classes)
 
 
 #Eval the y_train output and save in the output folder
